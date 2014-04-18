@@ -1,9 +1,9 @@
 #include <iostream>
 #include <vector>
-#include <vtk/vtkMetaImageReader.h>
-#include <vtk/vtkSmartPointer.h>
-#include <vtk/vtkImageData.h>
-#include <vtk/vtkDataArray.h>
+#include <vtkMetaImageReader.h>
+#include <vtkSmartPointer.h>
+#include <vtkImageData.h>
+#include <vtkDataArray.h>
 #include <fstream>
 #include "graph.h"
 using namespace std;

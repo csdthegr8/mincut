@@ -13,8 +13,26 @@ enum ALGORITHM {
     SERIAL_PR,
     GPU_PR,
 };
-int offsets[2][2] = { {-1 ,0}, { 0,-1}, {0,1}, {1,0}};
-
+int offsets[][2] = { {-1 ,0}, { 0,-1}, {1,0}, {0,1}};
+class vec2
+{
+public:
+    vec2(int x, int y) : x(x), y(y) {}
+    int x,y;
+    bool isSink(vec2 size) {
+        if (y == size.y) {
+            return true;
+        }
+        return false;
+    }
+    inline int sub2ind(vec2 size){
+        return x*size.y + y;
+    }
+    static inline vec2 ind2sub(vec2 size, int pos) {
+        vec2 vecpos(pos/size.y, pos % size.y);
+        return vecpos;
+    }
+};
 
 class Graph
 {
@@ -31,41 +49,23 @@ public:
 
     float mincut(ALGORITHM type);
     float serialFF();
-    inline vec2 getUnvisitedNeighbor(vec2 size, bool *visited, int pos) {
+    inline vec2 getUnvisitedNeighbor(vec2 &size, bool **visited, int &pos) {
         int xpos = pos / size.y;
         int ypos = pos % size.y;
 
         for (int i = 0; i < 4; i++) {
             int xnext = xpos + offsets[i][0];
             int ynext = ypos + offsets[i][1];
-            if (!visited[xnext*size.y + ynext] && (m_capacity[xnext][ynext] - m_flow[xnext][ynext] > 0)) {
-                return vec3(xnext,ynext);
+            if (!visited[xnext*size.y + ynext] && (m_capacity[xnext* size.y + ynext] - m_flow[xnext * size.y + ynext] > 0)) {
+                return vec2(xnext,ynext);
             }
         }
-        return vec3(-1,-1);
+        return vec2(-1,-1);
     }
 
+    bool findPath(vec2 &start, vec2 *end, int *pred, bool **visited, vec2 &size);
 };
 
-class vec2
-{
-public:
-    vec2::vec2(int x, int y) : x(x), y(y) {}
-    int x,y;
-    bool isSink(vec2 size) {
-        if (y == size.y) {
-            return true;
-        }
-        return false;
-    }
-    inline int sub2ind(vec2 size){
-        return x*size.y + y;
-    }
-    static inline vec2 ind2sub(vec2 size, int pos) {
-        vec2 vecpos(pos/size.y, pos % size.y);
-        return vecpos;
-    }
-};
 }
 
 #endif // GRAPH_H
