@@ -15,5 +15,6 @@ set (VTK_DIR "/home/sci/sdharan/VTK_build")
 find_package(VTK)
 
 include(${VTK_USE_FILE} REQUIRED)
-target_link_libraries(${PROJECT_NAME} ${VTK_LIBRARIES})
 ADD_LIBRARY(mincutlib STATIC ${mincut_HEADER_FILES} ${mincut_SOURCE_FILES})
+
+target_link_libraries(${PROJECT_NAME} ${VTK_LIBRARIES} mincutlib)

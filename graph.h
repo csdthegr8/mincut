@@ -13,14 +13,13 @@ enum ALGORITHM {
     SERIAL_PR,
     GPU_PR,
 };
-int offsets[][2] = { {-1 ,0}, { 0,-1}, {1,0}, {0,1}};
 class vec2
 {
 public:
     vec2(int x, int y) : x(x), y(y) {}
     int x,y;
     bool isSink(vec2 size) {
-        if (y == size.y) {
+        if (y == size.y-1) {
             return true;
         }
         return false;
@@ -49,19 +48,7 @@ public:
 
     float mincut(ALGORITHM type);
     float serialFF();
-    inline vec2 getUnvisitedNeighbor(vec2 &size, bool **visited, int &pos) {
-        int xpos = pos / size.y;
-        int ypos = pos % size.y;
-
-        for (int i = 0; i < 4; i++) {
-            int xnext = xpos + offsets[i][0];
-            int ynext = ypos + offsets[i][1];
-            if (!visited[xnext*size.y + ynext] && (m_capacity[xnext* size.y + ynext] - m_flow[xnext * size.y + ynext] > 0)) {
-                return vec2(xnext,ynext);
-            }
-        }
-        return vec2(-1,-1);
-    }
+    inline vec2 getUnvisitedNeighbor(vec2 &size, bool **visited, int &pos);
 
     bool findPath(vec2 &start, vec2 *end, int *pred, bool **visited, vec2 &size);
 };
