@@ -3,7 +3,9 @@
 #include <stdlib.h>
 #include<cmath>
 #include <string.h>
+#include <string>
 
+#include<fstream>
 namespace mincut{
 
 int offsets[][2] = { {-1 ,0}, { 0,-1}, {1,0}, {0,1}};
@@ -118,7 +120,7 @@ float Graph::serialFF() {
                 increment = std::min((m_capacity[5*parentpos+offset] - m_flow[5*parentpos+offset]), increment);
             }
 
-            std::cout << "{ " << node.x  << " , " << node.y << " } <- (" << offset << ","  << m_capacity[5*parentpos + offset] - m_flow[5*parentpos+offset] << ")<-" ;
+            //std::cout << "{ " << node.x  << " , " << node.y << " } <- (" << offset << ","  << m_capacity[5*parentpos + offset] - m_flow[5*parentpos+offset] << ")<-" ;
 
             node = parent;
             backup = node;
@@ -174,24 +176,31 @@ float Graph::serialFF() {
             }
         }
     }
+    this->writeSegmentedImage("newout");
     return flow;
 }
 
-int Graph::getUnvisitedNeighbor(vec2 &size, bool *visited, int &pos) {
-    int xpos = pos / size.y;
-    int ypos = pos % size.y;
+int Graph::getUnvisitedNeighbor(bool *visited, int &pos, bool checkcapacity) {
+    int xpos = pos / y;
+    int ypos = pos % y;
 
     for (int i = 0; i < 4; i++) {
         int xnext = xpos + offsets[i][0];
         int ynext = ypos + offsets[i][1];
-        if (xnext < size.x && ynext < size.y && xnext >= 0 && ynext >= 0) {
-            if (!visited[xnext*size.y+ ynext] && (m_capacity[5*(xpos*size.y+ypos) + i] - m_flow[5*(xpos*size.y+ypos) + i] > 0)) {
-                return xnext*size.y+ynext;
+        if (xnext < x && ynext < y && xnext >= 0 && ynext >= 0) {
+            if (checkcapacity) {
+                if (!visited[xnext*y+ ynext] && (m_capacity[5*(xpos*y+ypos) + i] - m_flow[5*(xpos*y+ypos) + i] > 0)) {
+                    return xnext*y+ynext;
+                }
+            } else {
+                if (!visited[xnext*y+ ynext]) {
+                    return xnext*y+ynext;
+                }
             }
         }
     }
 
-    if (m_capacity[5*(xpos*size.y+ypos) + 4] - m_flow[5*(xpos*size.y+ypos) + 4] > 0) {
+    if (m_capacity[5*(xpos*y+ypos) + 4] - m_flow[5*(xpos*y+ypos) + 4] > 0) {
         return SINK;
     }
     return -1;
@@ -222,7 +231,8 @@ int Graph::findPath(int *pred, bool *visited, vec2 &size) {
         int pos = queue[head++];
 
         while (true) {
-            int next_nodepos = this->getUnvisitedNeighbor(size, visited, pos);
+            int next_nodepos = this->getUnvisitedNeighbor(visited, pos, true);
+
 
             if (next_nodepos == -1) {
                 // Cannot find a path
@@ -239,7 +249,47 @@ int Graph::findPath(int *pred, bool *visited, vec2 &size) {
             pred[next_nodepos] = pos;
         }
     }
+
     return lastpred;
+}
+
+void Graph::writeSegmentedImage(std::string filename) {
+    std::ofstream fout(filename.c_str());
+    bool *out = new bool[x*y];
+    for (int i = 0; i < x*y; i++) {
+        if (m_slinks[i] != 0) {
+            bfs(i, &out[0]);
+        }
+    }
+
+    for (int i = 0; i < x; i++) {
+        for (int j = 0; j < y; j++) {
+            fout << out[i*y+j] ? 1 : 0;
+        }
+        fout << std::endl;
+    }
+}
+
+void Graph::bfs(int start, bool *visited) {
+    int queue[x*y];
+
+    int head = 0, tail = 0;
+
+    queue[tail++] = start;
+
+    while (head!=tail) {
+        int pos = queue[head++];
+        while(true) {
+            int next_nodepos = this->getUnvisitedNeighbor(visited, pos, true);
+            if (next_nodepos == -1) {
+                break;
+            } else if (next_nodepos == SINK) {
+                std::cerr << "Bad Output!" <<std::endl << std::flush;
+                break;
+            }
+            visited[next_nodepos] = true;
+        }
+    }
 }
 
 Graph::Graph()

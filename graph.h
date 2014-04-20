@@ -1,6 +1,7 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
+#include<string>
 #define U 0
 #define D 1
 #define L 2
@@ -51,10 +52,12 @@ public:
 
     float mincut(ALGORITHM type);
     float serialFF();
-    inline int getUnvisitedNeighbor(vec2 &size, bool *visited, int &pos);
+    inline int getUnvisitedNeighbor( bool *visited, int &pos, bool checkcapacity);
 
     //bool findPath(vec2 *end, int *pred, bool **visited, vec2 &size);
     int findPath(int *pred, bool *visited, vec2 &size);
+    void writeSegmentedImage(std::string filename);
+    void bfs(int start, bool *visited);
 };
 
 }

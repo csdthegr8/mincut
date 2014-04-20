@@ -14,7 +14,7 @@ int main()
 
 //    std::string mhd_filename = "/home/sci/sdharan/mincut/data/GradientImage2d_op.mhd";
 //    std::string raw_filename = "/home/sci/sdharan/mincut/data/GradientImage2d_op.raw";
-    std::string flower = "/home/shri/flower.jpg";
+    std::string flower = "/home/sci/sdharan/flower.jpg";
 
     vtkSmartPointer<vtkJPEGReader> reader =
             vtkSmartPointer<vtkJPEGReader>::New();
