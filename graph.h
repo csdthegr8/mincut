@@ -5,6 +5,9 @@
 #define D 1
 #define L 2
 #define R 3
+#define SOURCE -63
+#define SINK -64 // some random negative numbers
+
 namespace mincut {
 enum ALGORITHM {
     SERIAL_FF,
@@ -43,14 +46,15 @@ public:
     Graph(int x, int y, float **values);
     float *m_capacity;
     float *m_flow;
-
+    float *m_slinks;
     void buildAdjacency(bool verbose = false);
 
     float mincut(ALGORITHM type);
     float serialFF();
-    inline vec2 getUnvisitedNeighbor(vec2 &size, bool **visited, int &pos);
+    inline int getUnvisitedNeighbor(vec2 &size, bool *visited, int &pos);
 
-    bool findPath(vec2 &start, vec2 *end, int *pred, bool **visited, vec2 &size);
+    //bool findPath(vec2 *end, int *pred, bool **visited, vec2 &size);
+    int findPath(int *pred, bool *visited, vec2 &size);
 };
 
 }
