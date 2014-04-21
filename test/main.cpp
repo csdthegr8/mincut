@@ -8,6 +8,7 @@
 #include <fstream>
 #include "graph.h"
 #include <thread>
+#include "driver.cuh"
 using namespace std;
 
 int splitFF(int n,float **pixelvals, int x, int y) {
@@ -53,7 +54,7 @@ int main()
     vtkSmartPointer<vtkJPEGReader> reader =
             vtkSmartPointer<vtkJPEGReader>::New();
     reader->SetFileName(flower.c_str());
-    reader->Update();
+    reader->Update();\
     vtkImageData *imData = reader->GetOutput();
     //imData->GetPointData()
     //unsigned char *datapointer = ( unsigned char*)
@@ -85,10 +86,13 @@ int main()
 //    pixels[2][1] = 15.0f;
 //    pixels[2][2] = 230.0f;
 
-    //mincut::Graph *g = new mincut::Graph(203,270,pixelvals);
+    mincut::Graph *g = new mincut::Graph(203,270,pixelvals);
     //float flow = g->mincut(mincut::SERIAL_FF);
 
-    splitFF(4, pixelvals, 203, 270);
+    mincut::GPUGraph *gg = new mincut::GPUGraph(g);
+
+    gg->mincut(mincut::SERIAL_FF, true);
+    //splitFF(4, pixelvals, 203, 270);
 
 }
 

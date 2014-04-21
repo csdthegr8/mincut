@@ -1,0 +1,2 @@
+/usr/bin/ar cr liblibparallel.a  CMakeFiles/libparallel.dir/./libparallel_generated_driver.cu.o
+/usr/bin/ranlib liblibparallel.a
