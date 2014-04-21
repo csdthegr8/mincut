@@ -1,7 +1,11 @@
+// API for Mincut
+// Author : Shridharan Chandramouli
+// Coded as part of final project for CS6345
+
 #include "graph.h"
 #include <iostream>
 #include <stdlib.h>
-#include<cmath>
+#include <cmath>
 #include <string.h>
 #include <string>
 
@@ -27,6 +31,26 @@ Graph::Graph(int x, int y,  float **values):x(x), y(y) {
     this->buildAdjacency();
 }
 
+Graph::Graph(int nx, int ny, int x, int y, float **values, int ax, int ay) : x(x), y(y)
+{
+    this->m_pixelData = new float[x*y]();
+    for (int i = 0; i < x; i++) {
+        for (int j = 0; j < y; j++) {
+            if (nx*x + i >= ax || ny*y + j >= ay) {
+                continue;
+            }
+            m_pixelData[i*y+j] = values[nx*x + i][ny*y + j];
+        }
+    }
+    this->m_capacity = new float[5*this->x*this->y]();
+    this->m_flow = new float[5*x*y]();
+
+    this->m_slinks = new float[x*y];
+
+    this->buildAdjacency();
+
+}
+
 void Graph::buildAdjacency(bool verbose) {
     if (verbose) {
         std::cout << "Building adjacency...\n" << std::flush;
@@ -42,7 +66,7 @@ void Graph::buildAdjacency(bool verbose) {
                     this->m_capacity[5*(i*y+j) + k] = 255.0f - fabs(this->m_pixelData[i*y+j] - this->m_pixelData[nx*y+ny]);
                 }
                 else {
-                    this->m_capacity[5*(i*y+j)+k] = 0;
+                    this->m_capacity[5*(i*y+j)+k] = UNDEF;
                 }
             }
             this->m_slinks[i*y+j] = 255.0f - this->m_pixelData[i*y+j];
@@ -51,16 +75,46 @@ void Graph::buildAdjacency(bool verbose) {
     }
 }
 
-float Graph::mincut(ALGORITHM type) {
+float Graph::mincut(ALGORITHM type, bool verbose) {
     switch (type) {
     case SERIAL_FF:
-        return this->serialFF();
+        return this->serialFF(verbose);
     default:
         std::cout << "Not implemented yet!";
     }
 }
 
-float Graph::serialFF() {
+void Graph::mergeGraphs(Graph *otherGraph, int nx, int ny) {
+    for (int i = 0; i < otherGraph->x; i++) {
+        for (int j = 0; j < otherGraph->y; j++) {
+            int offset = (nx*otherGraph->x+i)*this->y+(ny*otherGraph->y+j);
+            std::cout << "Copying {" << i  << "," << j << "} to {" << nx*otherGraph->x + i << "," << ny*otherGraph->y +j << " as " << offset << std::endl;
+            for (int k = 0; k < 5; k++) {
+                this->m_flow[5*(offset) + k] = otherGraph->m_flow[5*(i*otherGraph->y+j) + k];
+            }
+            this->m_slinks[offset] = otherGraph->m_slinks[i*otherGraph->y+j];
+        }
+    }
+}
+
+void Graph::recomputeAdjacency() {
+
+    for (int i = 1; i < this->x-1; i++) {
+        for (int j = 1; j < this->y-1; j++){
+            for (int k = 0; k < 4; k++) {
+                if (m_capacity[5*(i*y+j) + k] == UNDEF) {
+                    int nx = i + offsets[k][0];
+                    int ny = j + offsets[k][1];
+                    if (nx >= 0 && nx < x && ny >=0 && ny < y) {
+                        this->m_capacity[5*(i*y+j) + k] = 255.0f - fabs(this->m_pixelData[i*y+j] - this->m_pixelData[nx*y+ny]);
+                    }
+                }
+            }
+        }
+    }
+}
+
+float Graph::serialFF (bool verbose) {
     float flow;
     int flow_map [][2]  = {
         {0,2},
@@ -71,12 +125,14 @@ float Graph::serialFF() {
     vec2 size(this->x,this->y);
     int *pred = new int[size.x*size.y];
     bool *visited = new bool[size.x*size.y];
-    for (int i = 0; i < x; i++) {
-        for (int j = 0; j < y; j++) {
-            pred[i*y+j] = -1;
-            visited[i*y+j] = false;
-        }
-    }
+//    memset(pred, 0, sizeof(int)*x*y);
+    memset(visited,0,sizeof(bool)*x*y);
+//    for (int i = 0; i < x; i++) {
+//        for (int j = 0; j < y; j++) {
+//            pred[i*y+j] = -1;
+//            visited[i*y+j] = false;
+//        }
+//    }
 
     vec2 end(-1,-1);
     float increment = 0.0f;
@@ -120,18 +176,25 @@ float Graph::serialFF() {
                 increment = std::min((m_capacity[5*parentpos+offset] - m_flow[5*parentpos+offset]), increment);
             }
 
-            //std::cout << "{ " << node.x  << " , " << node.y << " } <- (" << offset << ","  << m_capacity[5*parentpos + offset] - m_flow[5*parentpos+offset] << ")<-" ;
+            if (verbose) {
+                std::cout << "{ " << node.x  << " , " << node.y << " } <- (" << offset << ","  << m_capacity[5*parentpos + offset] - m_flow[5*parentpos+offset] << ")<-" ;
+            }
 
             node = parent;
             backup = node;
             parentpos = pred[node.sub2ind(size)];
         }
-
-        std::cout << "{ " << node.x  << " , " << node.y << " } <- (" << "?" << ","  << m_slinks[backup.sub2ind(size)] << ") <-" ;
-        std::cout << std::endl;
+        if(verbose) {
+            std::cout << "{ " << node.x  << " , " << node.y << " } <- (" << "?" << ","  << m_slinks[backup.sub2ind(size)] << ") <-" ;
+            std::cout << std::endl;
+        }
         // Update increment to account for lastnode -> SINK
-        increment = std::min(m_slinks[node.x*size.y+ node.y], increment);
-        increment = std::min(m_capacity[5*lastpos+4]- m_flow[5*lastpos+4],increment);
+        if (!first) {
+            increment = std::min(m_slinks[node.x*size.y+ node.y], increment);
+            increment = std::min(m_capacity[5*lastpos+4]- m_flow[5*lastpos+4],increment);
+        } else {
+            increment = std::min(m_slinks[node.x*size.y+ node.y],m_capacity[5*lastpos+4]- m_flow[5*lastpos+4]);
+        }
         parentpos = pred[lastpos];
         node = vec2::ind2sub(size,lastpos);
         while(parentpos != SOURCE) {
@@ -169,14 +232,15 @@ float Graph::serialFF() {
         m_flow[lastpos*5 + 4] += increment;
         flow += increment;
 
-        for (int i = 0; i < x; i++) {
-            for (int j = 0; j < y; j++) {
-                pred[i*size.y+j] = -1;
-                visited[i*size.y+j] = false;
-            }
-        }
+//        for (int i = 0; i < x; i++) {
+//            for (int j = 0; j < y; j++) {
+//                pred[i*size.y+j] = -1;
+//                visited[i*size.y+j] = false;
+//            }
+//        }
+        memset(visited, 0, sizeof(bool)*x*y);
     }
-    this->writeSegmentedImage("newout");
+    std::cout << "Flow is " << flow;
     return flow;
 }
 
@@ -184,11 +248,18 @@ int Graph::getUnvisitedNeighbor(bool *visited, int &pos, bool checkcapacity) {
     int xpos = pos / y;
     int ypos = pos % y;
 
+    if (m_capacity[5*(xpos*y+ypos) + 4] - m_flow[5*(xpos*y+ypos) + 4] > 0) {
+        return SINK;
+    }
+
     for (int i = 0; i < 4; i++) {
         int xnext = xpos + offsets[i][0];
         int ynext = ypos + offsets[i][1];
         if (xnext < x && ynext < y && xnext >= 0 && ynext >= 0) {
             if (checkcapacity) {
+                if (m_capacity[5*(xpos*y+ypos) + i] == UNDEF) {
+                    continue;
+                }
                 if (!visited[xnext*y+ ynext] && (m_capacity[5*(xpos*y+ypos) + i] - m_flow[5*(xpos*y+ypos) + i] > 0)) {
                     return xnext*y+ynext;
                 }
@@ -200,56 +271,44 @@ int Graph::getUnvisitedNeighbor(bool *visited, int &pos, bool checkcapacity) {
         }
     }
 
-    if (m_capacity[5*(xpos*y+ypos) + 4] - m_flow[5*(xpos*y+ypos) + 4] > 0) {
-        return SINK;
-    }
+
     return -1;
 }
 
 int Graph::findPath(int *pred, bool *visited, vec2 &size) {
 
-    int startpos = -1;
+    int head = 0, tail = 0;
+    int queue[size.x * size.y];
     for (int i = 0; i < x*y; i++) {
         if (this->m_slinks[i] != 0) {
-            startpos = i;
-            break;
+            queue[tail++] = i;
+            visited[i] = true;
+            pred[i] = SOURCE;
         }
     }
-    if (startpos == -1) {
-        return -1;
-    }
-
-//    vec2 start = vec2::ind2sub(size, startpos);
-    int head = 0, tail = 0;
-
-    int queue[size.x * size.y];
-    queue[tail++] = startpos;
-    visited[startpos] = true;
     int lastpred = -1;
-    pred[startpos] = SOURCE;
+
     while (head != tail) {
         int pos = queue[head++];
-
-        while (true) {
-            int next_nodepos = this->getUnvisitedNeighbor(visited, pos, true);
-
-
+        int next_nodepos;
+        do {
+            next_nodepos = this->getUnvisitedNeighbor(visited, pos, true);
             if (next_nodepos == -1) {
                 // Cannot find a path
-                break;
+                continue;
             }
             if (next_nodepos == SINK) {
                 // Found a path
                 lastpred = pos;
-                break;
+//                std::cout << "Hey!" << std::endl;
+                return lastpred;
             }
             // Update predecessor
             queue[tail++] = next_nodepos;
             visited[next_nodepos] = true;
             pred[next_nodepos] = pos;
-        }
+        } while (next_nodepos != -1);
     }
-
     return lastpred;
 }
 
@@ -296,5 +355,6 @@ Graph::Graph()
 {
 
 }
+
 
 }

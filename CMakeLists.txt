@@ -5,6 +5,7 @@ cmake_minimum_required(VERSION 2.8)
 aux_source_directory(. SRC_LIST)
 FILE(GLOB mincut_SOURCE_FILES *.cpp)
 FILE(GLOB mincut_HEADER_FILES *.h)
+SET(CMAKE_CXX_FLAGS "-std=c++11" )
 
 
 
@@ -17,4 +18,4 @@ find_package(VTK)
 include(${VTK_USE_FILE} REQUIRED)
 ADD_LIBRARY(mincutlib STATIC ${mincut_HEADER_FILES} ${mincut_SOURCE_FILES})
 
-target_link_libraries(${PROJECT_NAME} ${VTK_LIBRARIES} mincutlib)
+target_link_libraries(${PROJECT_NAME} ${VTK_LIBRARIES} mincutlib pthread)

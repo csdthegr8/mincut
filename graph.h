@@ -8,6 +8,7 @@
 #define R 3
 #define SOURCE -63
 #define SINK -64 // some random negative numbers
+#define UNDEF -65
 
 namespace mincut {
 enum ALGORITHM {
@@ -45,19 +46,22 @@ public:
     unsigned int x,y,z;
 
     Graph(int x, int y, float **values);
+    Graph(int nx, int ny, int x, int y, float **values, int ax, int ay);
     float *m_capacity;
     float *m_flow;
     float *m_slinks;
     void buildAdjacency(bool verbose = false);
 
-    float mincut(ALGORITHM type);
-    float serialFF();
+    float mincut(ALGORITHM type, bool verbose=false);
+    float serialFF(bool verbose = false);
     inline int getUnvisitedNeighbor( bool *visited, int &pos, bool checkcapacity);
 
     //bool findPath(vec2 *end, int *pred, bool **visited, vec2 &size);
     int findPath(int *pred, bool *visited, vec2 &size);
     void writeSegmentedImage(std::string filename);
     void bfs(int start, bool *visited);
+    void mergeGraphs(Graph *otherGraph, int nx, int ny);
+    void recomputeAdjacency();
 };
 
 }

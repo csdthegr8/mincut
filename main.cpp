@@ -7,14 +7,48 @@
 #include <vtkJPEGReader.h>
 #include <fstream>
 #include "graph.h"
+#include <thread>
 using namespace std;
+
+int splitFF(int n,float **pixelvals, int x, int y) {
+//    int nx = (x+n-1)/n;
+//    int ny = (y+n-1)/n;
+
+    int nx = 2;
+    int ny = 1;
+    std::thread t[2];
+    mincut::Graph* g[2];
+    for (int i = 0; i < 1; i++) {
+        for (int j = 0; j < 2; j++) {
+            g[j] = new mincut::Graph(i,j, 203, 135, pixelvals, x,y);
+            t[j] = std::thread(&mincut::Graph::mincut, g[j], mincut::SERIAL_FF,false);
+        }
+    }
+
+    mincut::Graph *cG = new mincut::Graph(x,y,pixelvals);
+//    for (int j = 0; j < n ; j++) {
+////        for (int i = 0; i < n ; i++){
+//            t[i*j+n].join();
+////            cG->mergeGraphs(g[i+j*n],j,i);
+//        }
+//    }
+
+    t[0].join();
+    t[1].join();
+
+    cG->mergeGraphs(g[0],0,0);
+    cG->mergeGraphs(g[0],0,1);
+    cG->mincut(mincut::SERIAL_FF,true);
+    cG->writeSegmentedImage("testout");
+}
 
 int main()
 {
 
 //    std::string mhd_filename = "/home/sci/sdharan/mincut/data/GradientImage2d_op.mhd";
 //    std::string raw_filename = "/home/sci/sdharan/mincut/data/GradientImage2d_op.raw";
-    std::string flower = "/home/sci/sdharan/flower.jpg";
+
+    std::string flower = "/home/shri/flower.jpg";
 
     vtkSmartPointer<vtkJPEGReader> reader =
             vtkSmartPointer<vtkJPEGReader>::New();
@@ -31,7 +65,7 @@ int main()
     for (int i = 0; i < 203; i++) {
         for (int j = 0; j < 270; j++) {
             //int coordinates[] = {i, j};
-            pixelvals[i][j] = imData->GetScalarComponentAsFloat(i,j,0,0);
+            pixelvals[i][j] = imData->GetScalarComponentAsFloat(j,i,0,0);
             //pixelvals[i][j] = i / 16 == 0 ? 1 : 2;
         }
     }
@@ -51,23 +85,11 @@ int main()
 //    pixels[2][1] = 15.0f;
 //    pixels[2][2] = 230.0f;
 
-    mincut::Graph *g = new mincut::Graph(203,270,pixelvals);
-    float flow = g->mincut(mincut::SERIAL_FF);
+    //mincut::Graph *g = new mincut::Graph(203,270,pixelvals);
+    //float flow = g->mincut(mincut::SERIAL_FF);
 
-    ofstream fout("outputimage");
-    for (int i = 0; i < g->x; i++) {
-        for (int j = 0; j < g->y; j++){
-            if (g->m_slinks[i*g->y+j] != 0) {
-                fout << "1 ";
+    splitFF(4, pixelvals, 203, 270);
 
-            }
-            else {
-                fout << "0 ";
-            }
-        }
-        fout << std::endl;
-    }
-    std::cout << "Hey! the flow is :" << flow;
-    return 0;
 }
+
 
