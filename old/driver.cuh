@@ -42,7 +42,7 @@ public:
         cudaMemcpy(d_flow,g->m_flow,5*IMAGE_SIZE*FLOAT_SIZE,cudaMemcpyHostToDevice);
         cudaMemcpy(d_slinks,g->m_slinks,IMAGE_SIZE * FLOAT_SIZE,cudaMemcpyHostToDevice);
 
-        //reduce<<<dim3(20,20),dim3(10,10)>>> (d_capacity, d_flow, d_slinks);
+        reduce<<<dim3(20,20),dim3(10,10)>>> (d_capacity, d_flow, d_slinks);
 
 
 

@@ -19,10 +19,15 @@ include(${VTK_USE_FILE} REQUIRED)
 
 
 ADD_EXECUTABLE(segment ${srcs} ${hdrs})
-    INCLUDE_DIRECTORIES(
+INCLUDE_DIRECTORIES(
     "/usr/local/include"
     "/usr/include"
     "/usr/local/cuda/include"
 )
 
-target_link_libraries(segment ${VTK_LIBRARIES} mincutlib libparallel)
+find_package(CUDA REQUIRED)
+
+SET(CUDA_VERBOSE_BUILD ON CACHE BOOL "nvcc verbose" FORCE)
+target_link_libraries(segment ${VTK_LIBRARIES} mincutlib gpumincut ${CUDA_LIBRARIES})
+add_dependencies(segment gpumincut)
+

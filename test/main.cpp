@@ -8,7 +8,7 @@
 #include <fstream>
 #include "graph.h"
 #include <thread>
-#include "driver.cuh"
+#include "driver.h"
 using namespace std;
 
 int splitFF(int n,float **pixelvals, int x, int y) {
@@ -50,7 +50,7 @@ int main()
 //    std::string raw_filename = "/home/sci/sdharan/mincut/data/GradientImage2d_op.raw";
 
     std::string flower = "/home/shri/flower.jpg";
-
+    flower = "/home/sci/sdharan/flower_resized.jpg";
     vtkSmartPointer<vtkJPEGReader> reader =
             vtkSmartPointer<vtkJPEGReader>::New();
     reader->SetFileName(flower.c_str());
@@ -59,12 +59,12 @@ int main()
     //imData->GetPointData()
     //unsigned char *datapointer = ( unsigned char*)
 
-    float **pixelvals = new float*[203];
-    for (int i = 0; i < 203; i++) {
-        pixelvals[i] = new float[270];
+    float **pixelvals = new float*[200];
+    for (int i = 0; i < 200; i++) {
+        pixelvals[i] = new float[200];
     }
-    for (int i = 0; i < 203; i++) {
-        for (int j = 0; j < 270; j++) {
+    for (int i = 0; i < 200; i++) {
+        for (int j = 0; j < 200; j++) {
             //int coordinates[] = {i, j};
             pixelvals[i][j] = imData->GetScalarComponentAsFloat(j,i,0,0);
             //pixelvals[i][j] = i / 16 == 0 ? 1 : 2;
@@ -86,12 +86,12 @@ int main()
 //    pixels[2][1] = 15.0f;
 //    pixels[2][2] = 230.0f;
 
-    mincut::Graph *g = new mincut::Graph(203,270,pixelvals);
+    mincut::Graph *g = new mincut::Graph(200,200,pixelvals);
     //float flow = g->mincut(mincut::SERIAL_FF);
 
-    mincut::GPUGraph *gg = new mincut::GPUGraph(g);
+    mincut::mincut(g);
 
-    gg->mincut(mincut::SERIAL_FF, true);
+    //gg->mincut(mincut::SERIAL_FF, true);
     //splitFF(4, pixelvals, 203, 270);
 
 }

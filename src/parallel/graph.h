@@ -2,10 +2,10 @@
 #define GRAPH_H
 
 #include<string>
-#define L 0
+#define U 0
 #define D 1
-#define R 2
-#define U 3
+#define L 2
+#define R 3
 #define SOURCE -63
 #define SINK -64 // some random negative numbers
 #define UNDEF -65

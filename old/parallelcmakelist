@@ -102,7 +102,7 @@ LINK_DIRECTORIES(
 )
 ENDIF(CUDA_FOUND)
 
-FILE(GLOB Parallel_API_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
+FILE(GLOB Parallel_API_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cuh)
 
 # copy header files over                                                                                                                                                                                           
 SET(Parallel_INSTALLED_HEADER_FILES)
@@ -119,10 +119,21 @@ ENDFOREACH(header_file)
 
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
 
+set(CUDA_SEPARABLE_COMPILATION ON)
 if(CUDA_FOUND)
     CUDA_ADD_LIBRARY(libparallel
-driver.cu
-driver.h
+        driver.cuh	
+	STATIC
+        OPTIONS -DSTUFF="blah blah"
+        RELEASE --use_fast_math -DNDEBUG
+        DEBUG -g -DDEBUG
     )
 endif(CUDA_FOUND)
-target_link_libraries(libparallel mincutlib)
+
+set(CUDA_ATTACH_VS_BUILD_RULE_TO_CUDA_FILE OFF)
+set(BUILD_SHARED_LIBS OFF)
+
+target_link_libraries(libparallel mincutlib ${CUDA_LIBRARIES})
+
+## INSTALL(FILES driver.cuh DESTINATION include)
+## INSTALL(FILES "${CMAKE_BINARY_DIR}/libparallel_lib.so" DESTINATION lib)

@@ -1,114 +1,22 @@
-PROJECT(GPUMINCUT)
+cmake_minimum_required(VERSION 2.8)
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
+find_package(CUDA)
 
-FIND_PACKAGE(CUDA REQUIRED)
+CUDA_INCLUDE_DIRECTORIES(
+  "${CMAKE_CURRENT_SOURCE_DIR}"
+  )
 
-MESSAGE(STATUS "CUDA_SDK_ROOT_DIR = ${CUDA_SDK_ROOT_DIR}")
-IF(CUDA_SDK_ROOT_DIR MATCHES "CUDA_SDK_ROOT_DIR-NOTFOUND")
-    IF(WIN32)
-        # Look for the SDK stuff
-        find_path(CUDA_SDK_ROOT_DIR C/common/inc/cutil.h
-            "$ENV{NVSDKCUDA_ROOT}"
-            "[HKEY_LOCAL_MACHINE\\SOFTWARE\\NVIDIA Corporation\\Installed Products\\NVIDIA SDK 10\\Compute;InstallDir]"
-            "/Developer/GPU\ Computing/C"
-            )
 
-        # Keep the CUDA_SDK_ROOT_DIR first in order to be able to override the
-        # environment variables.
-        set(CUDA_SDK_SEARCH_PATH
-            "${CUDA_SDK_ROOT_DIR}"
-            "${CUDA_TOOLKIT_ROOT_DIR}/local/NVSDK0.2"
-            "${CUDA_TOOLKIT_ROOT_DIR}/NVSDK0.2"
-            "${CUDA_TOOLKIT_ROOT_DIR}/NV_CUDA_SDK"
-            "$ENV{HOME}/NVIDIA_CUDA_SDK"
-            "$ENV{HOME}/NVIDIA_CUDA_SDK_MACOSX"
-            "/Developer/CUDA"
-        )
+list(APPEND CUDA_NVCC_FLAGS -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35)
 
-    ELSE(WIN32)
-        find_path(CUDA_SDK_ROOT_DIR C/common/inc/cutil.h
-            $ENV{NVSDKCUDA_ROOT}
-            ~/NVIDIA_GPU_Computing_SDK
-        )
-        MESSAGE(STATUS "CUDA_SDK_ROOT_DIR = ${CUDA_SDK_ROOT_DIR}$")
-        SET(CUDA_SDK_SEARCH_PATH
-            "${CUDA_SDK_ROOT_DIR}"
-            "~/NVIDIA_GPU_Computing_SDK"
-        )
-    ENDIF(WIN32)
+CUDA_ADD_LIBRARY(gpumincut driver.cu driver.h SHARED)
+ADD_DEPENDENCIES(gpumincut mincutlib)
 
-ENDIF(CUDA_SDK_ROOT_DIR MATCHES "CUDA_SDK_ROOT_DIR-NOTFOUND")
 
-option(COMPILE_SM30
-    "On to enable SM30 compilation"
-    ON
-)
-if(COMPILE_SM30)
-    set(CUDA_NVCC_FLAGS "-arch;sm_35")
-else(COMPILE_SM30)
-    set(CUDA_NVCC_FLAGS "-arch;sm_21")
-endif(COMPILE_SM30)
+FILE(GLOB Parallel_API_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.h)
 
-option(CUDA_5
-    "On if installed version is 5.0 or higher"
-    ON
-)
-
-if(CUDA_5)
-    add_definitions(-DKEPLER=1)
-endif(CUDA_5)
-
-include_directories(${CMAKE_CURRENT_BINARY_DIR})
-
-IF(CUDA_FOUND)
-    ADD_DEFINITIONS(-DCUDA_SUPPORT)
-ENDIF(CUDA_FOUND)
-    INCLUDE_DIRECTORIES(
-    "/usr/local/include"
-    "/usr/include"
-    "/usr/local/cuda/include"
-)
-
-IF(CUDA_FOUND)
-    INCLUDE_DIRECTORIES(
-        ${CUDA_SDK_ROOT_DIR}/common/inc
-        ${CUDA_SDK_ROOT_DIR}/C/common/inc
-        ${CUDA_TOOLKIT_ROOT_DIR}/include
-        ${CUDA_TOOLKIT_ROOT_DIR}/samples/common/inc
-    )
-    if(WIN32)
-        SET(CUTIL_LIB_DIRECTORY
-            "${CUDA_SDK_ROOT_DIR}/common/lib/"
-        )
-    else(WIN32)
-        SET(CUTIL_LIB_DIRECTORY
-            "${CUDA_SDK_ROOT_DIR}/C/lib/"
-        )
-    endif(WIN32)
-ENDIF(CUDA_FOUND)
-
-IF(CUDA_FOUND)
-    LINK_DIRECTORIES(
-        "/usr/lib"
-        "/usr/local/lib"
-        ${CUTIL_LIB_DIRECTORY}
-    )
-ELSE(CUDA_FOUND)
-LINK_DIRECTORIES(
-    "/usr/lib"
-    "/usr/local/lib"
-    "/usr/local/cuda/lib"
-)
-ENDIF(CUDA_FOUND)
-
-FILE(GLOB Parallel_API_HEADER_FILES ${CMAKE_CURRENT_SOURCE_DIR}/*.cuh)
-
-# copy header files over                                                                                                                                                                                           
 SET(Parallel_INSTALLED_HEADER_FILES)
 FOREACH(header_file ${Parallel_API_HEADER_FILES})
-  # When debugging, uncomment this line                                                                                                                                                                            
-	MESSAGE(STATUS "Copy header file: ${header_file}")                                                                                                                                                              
   GET_FILENAME_COMPONENT(file_no_path "${header_file}" NAME)
   CONFIGURE_FILE("${header_file}"
     "${CMAKE_BINARY_DIR}/include/${file_no_path}" COPYONLY IMMEDIATE)
@@ -119,9 +27,3 @@ ENDFOREACH(header_file)
 
 INCLUDE_DIRECTORIES(${CMAKE_BINARY_DIR}/include)
 
-if(CUDA_FOUND)
-    CUDA_ADD_LIBRARY(libparallel
-driver.cuh
-    )
-endif(CUDA_FOUND)
-target_link_libraries(libparallel mincutlib)
